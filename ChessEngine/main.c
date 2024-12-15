@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 // bitboard data type
 #define U64 unsigned long long
@@ -83,6 +84,46 @@ void print_bitboard(U64 bb) {
 }
 
 
+
+// ============================
+// ====== RANDOM NUMBERS ======
+// ============================
+
+//unsigned int state = 1017233273;
+unsigned int state = 1804289383;
+
+// getting random numbers by XOR shift algorithm
+
+// U32
+unsigned int get_random_U32_number() {
+	unsigned int num = state;
+	num ^= num << 13;
+	num ^= num >> 17;
+	num ^= num << 5;
+	state = num;
+
+	return num;
+}
+
+// U64
+U64 get_random_U64_number() {
+	U64 n1, n2, n3, n4;
+	// getting random num (U32) and slicing 16 bits from most significant bit side
+	n1 = ((U64)(get_random_U32_number() & 0xFFFFF));
+	n2 = ((U64)(get_random_U32_number() & 0xFFFFF));
+	n3 = ((U64)(get_random_U32_number() & 0xFFFFF));
+	n4 = ((U64)(get_random_U32_number() & 0xFFFFF));
+
+	return (n1 | (n2 << 16) | (n3 << 32) | (n4 << 48));
+}
+
+U64 generate_magic_number() {
+	return (get_random_U64_number() & get_random_U64_number() & get_random_U64_number());
+}
+
+
+
+
 // ============================================================
 // === Pregenerated bitboards to help with offboard attacks ===
 // ============================================================
@@ -98,6 +139,29 @@ const U64 not_hg_file = 4557430888798830399ULL;
 
 // files that are not "a" or "b" (range c - h)
 const U64 not_ab_file = 18229723555195321596ULL;
+
+// relevant occupancy bit count for every square on board
+const int bishop_relevant_bits[64] = {
+	6, 5, 5, 5, 5, 5, 5, 6,
+	5, 5, 5, 5, 5, 5, 5, 5,
+	5, 5, 7, 7, 7, 7, 5, 5,
+	5, 5, 7, 9, 9, 7, 5, 5,
+	5, 5, 7, 9, 9, 7, 5, 5,
+	5, 5, 7, 7, 7, 7, 5, 5,
+	5, 5, 5, 5, 5, 5, 5, 5,
+	6, 5, 5, 5, 5, 5, 5, 6,
+};
+
+const int rook_relevant_bits[64] = {
+	12, 11, 11, 11, 11, 11, 11, 12,
+	11, 10, 10, 10, 10, 10, 10, 11,
+	11, 10, 10, 10, 10, 10, 10, 11,
+	11, 10, 10, 10, 10, 10, 10, 11,
+	11, 10, 10, 10, 10, 10, 10, 11,
+	11, 10, 10, 10, 10, 10, 10, 11,
+	11, 10, 10, 10, 10, 10, 10, 11,
+	12, 11, 11, 11, 11, 11, 11, 12,
+};
 
 
 // PAWN ATTACKS [side][square]
@@ -308,36 +372,25 @@ void generate_attacks() {
 }
 
 
+// set occupancies
+
+U64 set_occupancy(int idx, int bits_in_mask, U64 attacks) {
+	U64 occupancy = 0ULL;
+
+	for (int i = 0; i < bits_in_mask; i++) {
+		int square = get_ls1b_index(attacks);
+		clear_bit(attacks, square);
+		if (idx & (1 << i)) {
+			occupancy |= (1ULL << square);
+		}
+	}
+
+	return occupancy;
+}
 
 int main() {
 	printf("RT Engine\n");
-	// generate all possible moves
 	generate_attacks();
-	/*for (int square = 0; square < 64; square++) {
-		printf("\n%d\n", square);
-		print_bitboard(generate_rook_attacks(square));
-	}*/
-
-	// random blocker bitboard
-	U64 blocker_bb = 0ULL;
-	set_bit(blocker_bb, d7);
-	set_bit(blocker_bb, d2);
-	set_bit(blocker_bb, d1);
-	set_bit(blocker_bb, b4);
-	set_bit(blocker_bb, g4);
-	set_bit(blocker_bb, c4);
-	print_bitboard(blocker_bb);
-
-
-	print_bitboard(block_rook(d4, blocker_bb));
-
-	printf("bit count: %d", count_bits(blocker_bb));
-	printf("LS1B: %d\nCord: %s\n", get_ls1b_index(blocker_bb), square_to_coords[get_ls1b_index(blocker_bb)]);
-
-	U64 test = 0ULL;
-	set_bit(test, get_ls1b_index(blocker_bb));
-	print_bitboard(test);
-
-
+	print_bitboard(generate_magic_number());
 	return 0;
 }
