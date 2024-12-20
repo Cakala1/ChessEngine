@@ -5,6 +5,13 @@
 // bitboard data type
 #define U64 unsigned long long
 
+// FEN dedug positions
+#define empty_board "8/8/8/8/8/8/8/8 w - - "
+#define start_position "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 "
+#define tricky_position "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 "
+#define killer_position "rnbqkb1r/pp1p1pPp/8/2p1pP2/1P1P4/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1"
+#define cmk_position "r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9 "
+
 // =======================
 // ==== BOARD SQUARES ====
 // =======================
@@ -96,22 +103,62 @@ int char_pieces[] = {
 	['k'] = k,
 };
 
+// ===============================================
+// ==================== BOARD ====================
+// ===============================================
+
+typedef struct {
+	U64 bitboards[12];
+	U64 occupancies[3];
+	int side;
+	int enpassant;
+	int castle;
+} Board;
 
 
 
-// bitboards for all types of pieces (white pawn, black pawn, white knight, black knight, etc...)
-U64 bitboards[12];
+Board* create_board() {
+	Board* board = malloc(sizeof(Board));
+	if (!board) return NULL;
+	memset(board->bitboards, 0, sizeof(board->bitboards));
+	memset(board->occupancies, 0, sizeof(board->occupancies));
+	board->side = white;
+	board->enpassant = no_sq;
+	board->castle = 0;
 
-U64 occupancies[3];
-int side = white;
-int enpassant = no_sq;
-int castle = 0;
+	return board;
+}
+
+void reset_board(Board* board) {
+	memset(board->bitboards, 0, sizeof(board->bitboards));
+	memset(board->occupancies, 0, sizeof(board->occupancies));
+	board->side = white;
+	board->enpassant = no_sq;
+	board->castle = 0;
+}
+
+void delete_board(Board* board) {
+	free(board);
+}
+
+// =============================
+// ========== ATTACKS ==========
+// =============================
+
+typedef struct {
+	U64 pawn_attacks[2][64];
+	U64 knight_attacks[64];
+	U64 king_attacks[64];
+	U64 bishop_masks[64];
+	U64 bishop_attacks[64][512];
+	U64 rook_masks[64];
+	U64 rook_attacks[64][4096];
+} AttackTables;
 
 
-
-// ==========================================
-// ================= OUTPUT =================
-// ==========================================
+// ==================================================
+// ================= INPUT / OUTPUT =================
+// ==================================================
 
 void print_bitboard(U64 bb) {
 	printf("\n\n");
@@ -135,7 +182,7 @@ void print_bitboard(U64 bb) {
 	printf("Bitboard value: %llu\n", bb);
 }
 
-void print_board() {
+void print_board(Board* board) {
 	printf("\n\n");
 	for (int rank = 0; rank < 8; rank++) {
 		printf(" %d", 8 - rank);
@@ -145,7 +192,7 @@ void print_board() {
 
 			// checking all bitboards of specific pieces (starting from white pawn and ending at black king) and assinging correct piece
 			for (int bb_idx = P; bb_idx <= k; bb_idx++) {
-				if (get_bit(bitboards[bb_idx], square)) piece = bb_idx;
+				if (get_bit(board->bitboards[bb_idx], square)) piece = bb_idx;
 			}
 			
 
@@ -154,14 +201,23 @@ void print_board() {
 		printf("\n");
 	}
 	printf("\n   a b c d e f g h\n\n");
-	printf("Enpassant: %s\n", (enpassant != no_sq) ? square_to_coords[enpassant] : "none");
-	printf("Side: %s\n", !side ? "white" : "black");
+	printf("Enpassant: %s\n", (board->enpassant != no_sq) ? square_to_coords[board->enpassant] : "none");
+	printf("Side: %s\n", !board->side ? "white" : "black");
 	printf("Castling: %c%c%c%c\n\n",
-		(castle & wk) ? 'K' : '-',
-		(castle & wq) ? 'Q' : '-',
-		(castle & bk) ? 'k' : '-',
-		(castle & bq) ? 'q' : '-'
+		(board->castle & wk) ? 'K' : '-',
+		(board->castle & wq) ? 'Q' : '-',
+		(board->castle & bk) ? 'k' : '-',
+		(board->castle & bq) ? 'q' : '-'
 	);
+}
+
+void parse_FEN(char* fen) {
+	/*memset(bitboards, 0, sizeof(bitboards));
+	memset(occupancies, 0, sizeof(occupancies));
+	side = 0;
+	castle = 0;
+	enpassant = no_sq;*/
+	
 }
 
 
@@ -169,7 +225,6 @@ void print_board() {
 // ====== RANDOM NUMBERS ======
 // ============================
 
-//unsigned int state = 1017233273;
 unsigned int random_state = 1804289383;
 
 // getting random numbers by XOR shift algorithm
@@ -383,28 +438,6 @@ const U64 rook_magic_numbers[64] = {
 };
 
 
-// =============================
-// ========== ATTACKS ==========
-// =============================
-
-// PAWN ATTACKS [side][square]
-U64 pawn_attacks[2][64];
-
-// KNIGHT ATTACKS (same for black and white)
-U64 knight_attacks[64];
-
-// KING ATTACKS (same for black and white)
-U64 king_attacks[64];
-
-// BISHOP ATTACKS
-U64 bishop_masks[64];
-// [square][occupancy]	
-U64 bishop_attacks[64][512];
-
-// ROOK ATTACKS
-U64 rook_masks[64];
-// [square][occupancy]	
-U64 rook_attacks[64][4096];
 
 // ===================================================================
 // ==== FUNCTIONS TO HELP WITH GENERATING ATTACKS FOR ALL FIGURES ====
@@ -584,27 +617,10 @@ U64 block_rook(int square, U64 block_bb) {
 
 
 
-// ====================================================
-// ==== Generating available attacks for all spots ====
-// ====================================================
+// =========================================================
+// ======================= OCCUPANCY  ======================
+// =========================================================
 
-void generate_attacks() {
-	// loop over board squares and generate a move
-	for (int square = 0; square < 64; square++) {
-		// generate for both black and white pawns
-		pawn_attacks[white][square] = generate_pawn_attacks(white, square);
-		pawn_attacks[black][square] = generate_pawn_attacks(black, square);
-
-		// generate for knights
-		knight_attacks[square] = generate_knight_attacks(square);
-
-		// generate for king
-		king_attacks[square] = generate_king_attacks(square);
-	}
-}
-
-
-// set occupancies
 
 U64 set_occupancy(int idx, int bits_in_mask, U64 attacks) {
 	U64 occupancy = 0ULL;
@@ -684,12 +700,12 @@ U64 find_magic_number(int square, int relevant_bits, int is_bishop) {
 
  }
 
- void generate_sliders_attacks(int is_bishop) {
+ void generate_sliders_attacks(AttackTables* attack_tables, int is_bishop) {
 	 for (int square = 0; square < 64; square++) {
-		 bishop_masks[square] = generate_bishop_attacks(square);
-		 rook_masks[square] = generate_rook_attacks(square);
+		 attack_tables->bishop_masks[square] = generate_bishop_attacks(square);
+		 attack_tables->rook_masks[square] = generate_rook_attacks(square);
 
-		 U64 attack_mask = is_bishop ? bishop_masks[square] : rook_masks[square];
+		 U64 attack_mask = is_bishop ? attack_tables->bishop_masks[square] : attack_tables->rook_masks[square];
 		 int relevant_bits = count_bits(attack_mask);
 		 int occupancy_indicies = 1 << relevant_bits;
 
@@ -697,30 +713,30 @@ U64 find_magic_number(int square, int relevant_bits, int is_bishop) {
 			 U64 occupancy = set_occupancy(i, relevant_bits, attack_mask);
 			 if (is_bishop) {
 				 int magic = (occupancy * bishop_magic_numbers[square]) >> (64 - bishop_relevant_bits[square]);
-				 bishop_attacks[square][magic] = block_bishop(square, occupancy);
+				 attack_tables->bishop_attacks[square][magic] = block_bishop(square, occupancy);
 			 }
 			 else {
 				 int magic = (occupancy * rook_magic_numbers[square]) >> (64 - rook_relevant_bits[square]);
-				 rook_attacks[square][magic] = block_rook(square, occupancy);
+				 attack_tables->rook_attacks[square][magic] = block_rook(square, occupancy);
 			 }
 		 }
 	 }
  }
 
  
- static inline U64 get_bishop_attacks(int square, U64 occupancy) {
-	 occupancy &= bishop_masks[square];
+ static inline U64 get_bishop_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
+	 occupancy &= attack_tables->bishop_masks[square];
 	 occupancy *= bishop_magic_numbers[square];
 	 occupancy >>= 64 - bishop_relevant_bits[square];
 
-	 return bishop_attacks[square][occupancy];
+	 return attack_tables->bishop_attacks[square][occupancy];
  }
 
- static inline U64 get_rook_attacks(int square, U64 occupancy) {
-	 occupancy &= rook_masks[square];
+ static inline U64 get_rook_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
+	 occupancy &= attack_tables->rook_masks[square];
 	 occupancy *= rook_magic_numbers[square];
 	 occupancy >>= 64 - rook_relevant_bits[square];
-	 return rook_attacks[square][occupancy];
+	 return attack_tables->rook_attacks[square][occupancy];
  }
 
 
@@ -728,11 +744,24 @@ U64 find_magic_number(int square, int relevant_bits, int is_bishop) {
 // ============= Init =============
 // ================================
 
-void init_all() {
-	 generate_attacks();
-	 //generate_magic_numbers();
-	 generate_sliders_attacks(bishop);
-	 generate_sliders_attacks(rook);
+AttackTables* init_attack_tables() {
+	AttackTables* tables = malloc(sizeof(AttackTables));
+	if (!tables) {
+		fprintf(stderr, "Failed to allocate memory for attack tables\n");
+		exit(1);
+	}
+
+	for (int square = 0; square < 64; square++) {
+		tables->pawn_attacks[white][square] = generate_pawn_attacks(white, square);
+		tables->pawn_attacks[black][square] = generate_pawn_attacks(black, square);
+		tables->knight_attacks[square] = generate_knight_attacks(square);
+		tables->king_attacks[square] = generate_king_attacks(square);
+	}
+
+	generate_sliders_attacks(tables, bishop);
+	generate_sliders_attacks(tables, rook);
+
+	return tables;
 }
 
 
@@ -742,49 +771,30 @@ void init_all() {
 
 
 int main() {
+	Board* board = create_board();
+	AttackTables* tables = init_attack_tables();
 	printf("RT Engine\n");
-	init_all();
-	set_bit(bitboards[P], a2);
-	set_bit(bitboards[P], b2);
-	set_bit(bitboards[P], c2);
-	set_bit(bitboards[P], d2);
-	set_bit(bitboards[P], e2);
-	set_bit(bitboards[P], f2);
-	set_bit(bitboards[P], g2);
-	set_bit(bitboards[P], h2);
-	set_bit(bitboards[N], b1);
-	set_bit(bitboards[N], g1);
-	set_bit(bitboards[B], c1);
-	set_bit(bitboards[B], f1);
-	set_bit(bitboards[R], a1);
-	set_bit(bitboards[R], h1);
-	set_bit(bitboards[Q], d1);
-	set_bit(bitboards[K], e1);
+	set_bit(board->bitboards[P], a2);
+	set_bit(board->bitboards[P], b2);
+	set_bit(board->bitboards[P], c2);
+	set_bit(board->bitboards[P], d2);
+	set_bit(board->bitboards[P], e2);
+	set_bit(board->bitboards[P], f2);
+	set_bit(board->bitboards[P], g2);
+	set_bit(board->bitboards[P], h2);
+	set_bit(board->bitboards[N], b1);
+	set_bit(board->bitboards[N], g1);
+	set_bit(board->bitboards[B], c1);
+	set_bit(board->bitboards[B], f1);
+	set_bit(board->bitboards[R], a1);
+	set_bit(board->bitboards[R], h1);
+	set_bit(board->bitboards[Q], d1);
+	set_bit(board->bitboards[K], e1);
 
-	set_bit(bitboards[p], a7);
-	set_bit(bitboards[p], b7);
-	set_bit(bitboards[p], c7);
-	set_bit(bitboards[p], d7);
-	set_bit(bitboards[p], e7);
-	set_bit(bitboards[p], f7);
-	set_bit(bitboards[p], g7);
-	set_bit(bitboards[p], h7);
-	set_bit(bitboards[n], b8);
-	set_bit(bitboards[n], g8);
-	set_bit(bitboards[b], c8);
-	set_bit(bitboards[b], f8);
-	set_bit(bitboards[r], a8);
-	set_bit(bitboards[r], h8);
-	set_bit(bitboards[q], d8);
-	set_bit(bitboards[k], e8);
-
-	enpassant = e3;
-	castle = 15;
-
-	print_board();
-
-	for (int piece = 0; piece <= k; piece++) {
-		print_bitboard(bitboards[piece]);
-	}
+	board->enpassant = e3;
+	board->castle = 15;
+	print_board(board);
+	free(board);
+	free(tables);
 	return 0;
 }
