@@ -117,18 +117,6 @@ typedef struct {
 
 
 
-Board* create_board() {
-	Board* board = malloc(sizeof(Board));
-	if (!board) return NULL;
-	memset(board->bitboards, 0, sizeof(board->bitboards));
-	memset(board->occupancies, 0, sizeof(board->occupancies));
-	board->side = white;
-	board->enpassant = no_sq;
-	board->castle = 0;
-
-	return board;
-}
-
 void reset_board(Board* board) {
 	memset(board->bitboards, 0, sizeof(board->bitboards));
 	memset(board->occupancies, 0, sizeof(board->occupancies));
@@ -137,9 +125,17 @@ void reset_board(Board* board) {
 	board->castle = 0;
 }
 
-void delete_board(Board* board) {
-	free(board);
+Board* create_board() {
+	Board* board = malloc(sizeof(Board));
+	if (!board) {
+		fprintf(stderr, "Failed to allocate memory for board.\n");
+		exit(1);
+	}
+	reset_board(board);
+
+	return board;
 }
+
 
 // =============================
 // ========== ATTACKS ==========
@@ -153,6 +149,7 @@ typedef struct {
 	U64 bishop_attacks[64][512];
 	U64 rook_masks[64];
 	U64 rook_attacks[64][4096];
+	U64 queen_attacks[];
 } AttackTables;
 
 
@@ -211,13 +208,80 @@ void print_board(Board* board) {
 	);
 }
 
-void parse_FEN(char* fen) {
-	/*memset(bitboards, 0, sizeof(bitboards));
-	memset(occupancies, 0, sizeof(occupancies));
-	side = 0;
-	castle = 0;
-	enpassant = no_sq;*/
-	
+void parse_FEN(Board* board, char* fen) {
+	reset_board(board);
+	for (int square = 0; square < 64 && *fen && *fen != ' '; )
+	{
+		// match ascii pieces within FEN string
+		if ((*fen >= 'b' && *fen <= 'r') || (*fen >= 'B' && *fen <= 'R'))
+		{
+			int piece = char_pieces[*fen];
+			set_bit(board->bitboards[piece], square);
+			square++;
+			fen++;
+		}
+
+		// match empty square numbers within FEN string
+		else if (*fen >= '1' && *fen <= '8')
+		{
+			int offset = *fen - '0';
+			square += offset;
+			fen++;
+		}
+
+		// rank separator
+		else if (*fen == '/')
+		{
+			fen++;
+		}
+		else
+		{
+			fen++; // wrong character
+		}
+	}
+
+	// setting side
+	fen++;
+	board->side = *fen == 'w' ? white : black;
+
+	// setting castle rights
+	fen += 2;
+	while (*fen != ' ') {
+		switch (*fen) {
+		case 'K':
+			board->castle |= wk;
+			break;
+		case 'Q':
+			board->castle |= wq;
+			break;
+		case 'k':
+			board->castle |= bk;
+			break;
+		case 'q':
+			board->castle |= bq;
+			break;
+		default:
+			break;
+		}
+		fen++;
+	}
+	fen++;
+
+	// setting enpassant square
+	if (*fen != '-') {
+		int file = fen[0] - 'a';
+		int rank = 8 - (fen[1] - '0');
+		board->enpassant = rank * 8 + file;
+	}
+
+	// setting occupancies
+	for (int piece = P; piece <= K; piece++) {
+		board->occupancies[white] |= board->bitboards[piece];
+	}
+	for (int piece = p; piece <= k; piece++) {
+		board->occupancies[black] |= board->bitboards[piece];
+	}
+	board->occupancies[both] |= board->occupancies[white] | board->occupancies[black];
 }
 
 
@@ -616,7 +680,6 @@ U64 block_rook(int square, U64 block_bb) {
 }
 
 
-
 // =========================================================
 // ======================= OCCUPANCY  ======================
 // =========================================================
@@ -739,6 +802,10 @@ U64 find_magic_number(int square, int relevant_bits, int is_bishop) {
 	 return attack_tables->rook_attacks[square][occupancy];
  }
 
+ static inline U64 get_queen_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
+	 return (get_bishop_attacks(attack_tables, square, occupancy) | get_rook_attacks(attack_tables, square, occupancy));
+ }
+
 
 // ================================
 // ============= Init =============
@@ -774,27 +841,10 @@ int main() {
 	Board* board = create_board();
 	AttackTables* tables = init_attack_tables();
 	printf("RT Engine\n");
-	set_bit(board->bitboards[P], a2);
-	set_bit(board->bitboards[P], b2);
-	set_bit(board->bitboards[P], c2);
-	set_bit(board->bitboards[P], d2);
-	set_bit(board->bitboards[P], e2);
-	set_bit(board->bitboards[P], f2);
-	set_bit(board->bitboards[P], g2);
-	set_bit(board->bitboards[P], h2);
-	set_bit(board->bitboards[N], b1);
-	set_bit(board->bitboards[N], g1);
-	set_bit(board->bitboards[B], c1);
-	set_bit(board->bitboards[B], f1);
-	set_bit(board->bitboards[R], a1);
-	set_bit(board->bitboards[R], h1);
-	set_bit(board->bitboards[Q], d1);
-	set_bit(board->bitboards[K], e1);
-
-	board->enpassant = e3;
-	board->castle = 15;
-	print_board(board);
-	free(board);
-	free(tables);
+	U64 occupancy = 0ULL;
+	set_bit(occupancy, e7);
+	set_bit(occupancy, c4);
+	set_bit(occupancy, c6);
+	print_bitboard(get_queen_attacks(tables, e4, occupancy));
 	return 0;
 }
