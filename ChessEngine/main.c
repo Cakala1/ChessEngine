@@ -807,6 +807,33 @@ U64 find_magic_number(int square, int relevant_bits, int is_bishop) {
  }
 
 
+ // check if square is attacked by the given side (no need for queen as it's occupancy is the same as in bishop | rook)
+ static inline int is_square_attacked(Board* board, AttackTables* attack_tables, int square, int side) {
+	 int other_side = (side == white) ? black : white;
+	 if (attack_tables->pawn_attacks[other_side][square] & board->bitboards[(side == white) ? P : p]) return 1;
+	 if ((attack_tables->knight_attacks[square] & board->bitboards[ side == white ? N : n])) return 1;
+	 if ((attack_tables->king_attacks[square] & board->bitboards[ side == white ? K : k])) return 1;
+	 if (get_bishop_attacks(attack_tables, square, board->occupancies[both]) & board->bitboards[side == white ? B : b]) return 1;
+	 if (get_rook_attacks(attack_tables, square, board->occupancies[both]) & board->bitboards[side == white ? R : r]) return 1;
+
+	 return 0;
+ }
+
+
+ void print_attacked_squares(Board* board, AttackTables* attack_tables, int side) {
+	 printf("\n");
+	 for (int r = 0; r < 8; r++) {
+		 printf(" %d ", 8 - r);
+		 for (int f = 0; f < 8; f++) {
+			 int square = 8 * r + f;
+			 printf(" %c", is_square_attacked(board, attack_tables, square, side) ? '1' : '.');
+		 }
+		 printf("\n");
+	 }
+
+	 printf("\n    a b c d e f g h\n\n");
+ }
+
 // ================================
 // ============= Init =============
 // ================================
@@ -832,6 +859,7 @@ AttackTables* init_attack_tables() {
 }
 
 
+
 // ================================
 // ============= MAIN =============
 // ================================
@@ -841,10 +869,10 @@ int main() {
 	Board* board = create_board();
 	AttackTables* tables = init_attack_tables();
 	printf("RT Engine\n");
-	U64 occupancy = 0ULL;
-	set_bit(occupancy, e7);
-	set_bit(occupancy, c4);
-	set_bit(occupancy, c6);
-	print_bitboard(get_queen_attacks(tables, e4, occupancy));
+	parse_FEN(board, start_position);
+	print_board(board);
+	print_bitboard(board->occupancies[both]);
+	print_attacked_squares(board, tables, white);
+	print_attacked_squares(board, tables, black);
 	return 0;
 }
