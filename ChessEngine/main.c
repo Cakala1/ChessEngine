@@ -149,7 +149,6 @@ typedef struct {
 	U64 bishop_attacks[64][512];
 	U64 rook_masks[64];
 	U64 rook_attacks[64][4096];
-	U64 queen_attacks[];
 } AttackTables;
 
 
@@ -787,7 +786,7 @@ U64 find_magic_number(int square, int relevant_bits, int is_bishop) {
  }
 
  
- static inline U64 get_bishop_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
+U64 get_bishop_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
 	 occupancy &= attack_tables->bishop_masks[square];
 	 occupancy *= bishop_magic_numbers[square];
 	 occupancy >>= 64 - bishop_relevant_bits[square];
@@ -795,20 +794,27 @@ U64 find_magic_number(int square, int relevant_bits, int is_bishop) {
 	 return attack_tables->bishop_attacks[square][occupancy];
  }
 
- static inline U64 get_rook_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
+ U64 get_rook_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
 	 occupancy &= attack_tables->rook_masks[square];
 	 occupancy *= rook_magic_numbers[square];
 	 occupancy >>= 64 - rook_relevant_bits[square];
 	 return attack_tables->rook_attacks[square][occupancy];
  }
 
- static inline U64 get_queen_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
+U64 get_queen_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
 	 return (get_bishop_attacks(attack_tables, square, occupancy) | get_rook_attacks(attack_tables, square, occupancy));
  }
 
 
+
+
+// ==========================================================
+// ===================== MOVE GENERATOR =====================
+// ==========================================================
+
+
  // check if square is attacked by the given side (no need for queen as it's occupancy is the same as in bishop | rook)
- static inline int is_square_attacked(Board* board, AttackTables* attack_tables, int square, int side) {
+int is_square_attacked(Board* board, AttackTables* attack_tables, int square, int side) {
 	 int other_side = (side == white) ? black : white;
 	 if (attack_tables->pawn_attacks[other_side][square] & board->bitboards[(side == white) ? P : p]) return 1;
 	 if ((attack_tables->knight_attacks[square] & board->bitboards[ side == white ? N : n])) return 1;
@@ -818,6 +824,274 @@ U64 find_magic_number(int square, int relevant_bits, int is_bishop) {
 
 	 return 0;
  }
+
+
+void generate_moves(Board* board, AttackTables* attack_tables) {
+	// move = from source to target
+	int source_square, target_square;
+	U64 current_bb, attacks;
+
+	for (int piece = P; piece <= k; piece++) {
+		current_bb = board->bitboards[piece];
+		if (board->side == white) {
+			if (piece == P) {
+				while (current_bb) {
+					source_square = get_ls1b_index(current_bb);
+					target_square = source_square - 8;
+					// check if target is in bounds and if it's not blocked by anything
+					if (!(target_square < a8) && !get_bit(board->occupancies[both], target_square)) {
+						// promotion
+						if (source_square >= a7 && source_square <= h7) {
+							printf("Pawn promote: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+						}
+						// pushing pawn
+						else {
+							printf("Pawn push: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+
+							if ((source_square >= a2 && source_square <= h2) && !get_bit(board->occupancies[both], target_square - 8)) {
+								printf("Double Pawn push: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square - 8]);
+
+							}
+						}
+					}
+					attacks = attack_tables->pawn_attacks[white][source_square] & board->occupancies[black];
+
+					// captions
+					while (attacks) {
+						target_square = get_ls1b_index(attacks);
+						// caption & promotion
+						if (source_square >= a7 && source_square <= h7) {
+							printf("Pawn capture and promote: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+						}
+						else {
+							printf("Pawn caputre: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+						}
+						clear_bit(attacks, target_square);
+					}
+
+					if (board->enpassant != no_sq) {
+						U64 enpassant_attacks = attack_tables->pawn_attacks[white][source_square] & (1ULL << board->enpassant);
+						if (enpassant_attacks) {
+							int enpassant_square = get_ls1b_index(enpassant_attacks);
+							printf("Enpassant caputre: %s to %s\n", square_to_coords[source_square], square_to_coords[enpassant_square]);
+						}
+					}
+
+					clear_bit(current_bb, source_square);
+				}
+			}
+
+			// castle moves 
+			if (piece == K) {
+				// king side castle
+				if (board->castle & wk) {
+					if (!get_bit(board->occupancies[both], f1) && !get_bit(board->occupancies[both], g1)) {
+						if (!is_square_attacked(board, attack_tables, e1, black) && !is_square_attacked(board, attack_tables, f1, black)) {
+							printf("Castle move: e1 to g1\n");
+						}
+					}
+				}
+				// queen side castle
+				if (board->castle & wq) {
+					if (!get_bit(board->occupancies[both], b1) && !get_bit(board->occupancies[both], c1) && !get_bit(board->occupancies[both], d1)) {
+						if (!is_square_attacked(board, attack_tables, e1, black) && !is_square_attacked(board, attack_tables, d1, black)) {
+							printf("Castle move: e1 to c1\n");
+						}
+					}
+				}
+			}
+		}
+		else {
+			if (piece == p) {
+				while (current_bb) {
+					source_square = get_ls1b_index(current_bb);
+					target_square = source_square + 8;
+					// check if target is in bounds and if it's not blocked by anything
+					if (!(target_square > h1) && !get_bit(board->occupancies[both], target_square)) {
+						// promotion
+						if (source_square >= a2 && source_square <= h2) {
+							printf("Pawn promote: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+						}
+						// pushing pawn
+						else {
+							printf("Pawn push: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+
+							if ((source_square >= a7 && source_square <= h7) && !get_bit(board->occupancies[both], target_square + 8)) {
+								printf("Double Pawn push: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square + 8]);
+
+							}
+						}
+					}
+
+					attacks = attack_tables->pawn_attacks[black][source_square] & board->occupancies[white];
+
+					// captions
+					while (attacks) {
+						target_square = get_ls1b_index(attacks);
+						// caption & promotion
+						if (source_square >= a2 && source_square <= h2) {
+							printf("Pawn capture and promote: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+						}
+						else {
+							printf("Pawn caputre: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+						}
+						clear_bit(attacks, target_square);
+					}
+
+					if (board->enpassant != no_sq) {
+						U64 enpassant_attacks = attack_tables->pawn_attacks[white][source_square] & (1ULL << board->enpassant);
+						if (enpassant_attacks) {
+							int enpassant_square = get_ls1b_index(enpassant_attacks);
+							printf("Enpassant caputre: %s to %s\n", square_to_coords[source_square], square_to_coords[enpassant_square]);
+						}
+					}
+
+					clear_bit(current_bb, source_square);
+				}
+			}
+
+			// castle moves 
+			if (piece == k) {
+				// king side castle
+				if (board->castle & bk) {
+					if (!get_bit(board->occupancies[both], f8) && !get_bit(board->occupancies[both], g8)) {
+						if (!is_square_attacked(board, attack_tables, e8, white) && !is_square_attacked(board, attack_tables, f8, white)) {
+							printf("Castle move: e8 to g8\n");
+						}
+					}
+				}
+				// queen side castle
+				if (board->castle & bq) {
+					if (!get_bit(board->occupancies[both], b8) && !get_bit(board->occupancies[both], c8) && !get_bit(board->occupancies[both], d8)) {
+						if (!is_square_attacked(board, attack_tables, e8, white) && !is_square_attacked(board, attack_tables, d8, white)) {
+							printf("Castle move: e8 to c8\n");
+						}
+					}
+				}
+			}
+
+		}
+
+
+		// Knight
+		if ((board->side == white) ? piece == N : piece == n) {
+			while (current_bb) {
+				source_square = get_ls1b_index(current_bb);
+				attacks = attack_tables->knight_attacks[source_square] & ((board->side == white) ? ~board->occupancies[white] : ~board->occupancies[black]);
+				while (attacks) {
+					target_square = get_ls1b_index(attacks);
+
+					if (!get_bit((board->side == white ? board->occupancies[black] : board->occupancies[white]), target_square)) {
+						printf("Knight move: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+					}
+					else {
+						printf("Knight capture: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+					}
+
+					clear_bit(attacks, target_square);
+				}
+
+				clear_bit(current_bb, source_square);
+			}
+		}
+
+		// Bishop
+		if ((board->side == white) ? piece == B : piece == b) {
+			while (current_bb) {
+				source_square = get_ls1b_index(current_bb);
+				attacks = get_bishop_attacks(attack_tables, source_square, board->occupancies[both]) 
+					& ((board->side == white) ? ~board->occupancies[white] : ~board->occupancies[black]);
+
+				while (attacks) {
+					target_square = get_ls1b_index(attacks);
+
+					if (!get_bit((board->side == white ? board->occupancies[black] : board->occupancies[white]), target_square)) {
+						printf("Bishop move: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+					}
+					else {
+						printf("Bishop capture: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+					}
+
+					clear_bit(attacks, target_square);
+				}
+
+				clear_bit(current_bb, source_square);
+			}
+		}
+
+		// Rook
+		if ((board->side == white) ? piece == R : piece == r) {
+			while (current_bb) {
+				source_square = get_ls1b_index(current_bb);
+				attacks = get_rook_attacks(attack_tables, source_square, board->occupancies[both])
+					& ((board->side == white) ? ~board->occupancies[white] : ~board->occupancies[black]);
+
+				while (attacks) {
+					target_square = get_ls1b_index(attacks);
+
+					if (!get_bit((board->side == white ? board->occupancies[black] : board->occupancies[white]), target_square)) {
+						printf("Rook move: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+					}
+					else {
+						printf("Rook capture: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+					}
+
+					clear_bit(attacks, target_square);
+				}
+
+				clear_bit(current_bb, source_square);
+			}
+		}
+
+		// Queen
+		if ((board->side == white) ? piece == Q : piece == q) {
+			while (current_bb) {
+				source_square = get_ls1b_index(current_bb);
+				attacks = get_queen_attacks(attack_tables, source_square, board->occupancies[both])
+					& ((board->side == white) ? ~board->occupancies[white] : ~board->occupancies[black]);
+
+				while (attacks) {
+					target_square = get_ls1b_index(attacks);
+
+					if (!get_bit((board->side == white ? board->occupancies[black] : board->occupancies[white]), target_square)) {
+						printf("Queen move: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+					}
+					else {
+						printf("Queen capture: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+					}
+
+					clear_bit(attacks, target_square);
+				}
+
+				clear_bit(current_bb, source_square);
+			}
+		}
+
+		// King
+		if ((board->side == white) ? piece == K : piece == k) {
+			while (current_bb) {
+				source_square = get_ls1b_index(current_bb);
+				attacks = attack_tables->king_attacks[source_square]
+					& ((board->side == white) ? ~board->occupancies[white] : ~board->occupancies[black]);
+
+				while (attacks) {
+					target_square = get_ls1b_index(attacks);
+
+					if (!get_bit((board->side == white ? board->occupancies[black] : board->occupancies[white]), target_square)) {
+						printf("King move: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+					}
+					else {
+						printf("King capture: %s to %s\n", square_to_coords[source_square], square_to_coords[target_square]);
+					}
+
+					clear_bit(attacks, target_square);
+				}
+
+				clear_bit(current_bb, source_square);
+			}
+		}
+	}
+}
 
 
  void print_attacked_squares(Board* board, AttackTables* attack_tables, int side) {
@@ -869,10 +1143,8 @@ int main() {
 	Board* board = create_board();
 	AttackTables* tables = init_attack_tables();
 	printf("RT Engine\n");
-	parse_FEN(board, start_position);
+	parse_FEN(board, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ");
 	print_board(board);
-	print_bitboard(board->occupancies[both]);
-	print_attacked_squares(board, tables, white);
-	print_attacked_squares(board, tables, black);
+	generate_moves(board, tables);
 	return 0;
 }
