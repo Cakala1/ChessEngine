@@ -152,6 +152,8 @@ typedef struct {
 } AttackTables;
 
 
+
+
 // ==================================================
 // ================= INPUT / OUTPUT =================
 // ==================================================
@@ -811,6 +813,32 @@ U64 get_queen_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
 // ==========================================================
 // ===================== MOVE GENERATOR =====================
 // ==========================================================
+/*
+	binary move bits				 flag name			 hexidecimal constants
+
+	0000 0000 0000 0000 0011 1111    source square       0x3f
+	0000 0000 0000 1111 1100 0000    target square       0xfc0
+	0000 0000 1111 0000 0000 0000    piece               0xf000
+	0000 1111 0000 0000 0000 0000    promoted piece      0xf0000
+	0001 0000 0000 0000 0000 0000    capture flag        0x100000
+	0010 0000 0000 0000 0000 0000    double push flag    0x200000
+	0100 0000 0000 0000 0000 0000    enpassant flag      0x400000
+	1000 0000 0000 0000 0000 0000    castling flag       0x800000
+*/
+
+
+#define encode_move(source, target, piece, promoted, capture, double_push, enpassant, castling) \
+	(source) | (target << 6) | (piece << 12) | (promoted << 16) | (capture << 20) | (double_push << 21) | (enpassant << 22) | (castling << 23)\
+
+#define get_move_source(move) (move & 0x3f)
+#define get_move_target(move) ((move & 0xfc0) >> 6)
+#define get_move_piece(move) ((move & 0xf000) >> 12)
+#define get_move_promoted(move) ((move & 0xf0000) >> 16)
+#define get_move_capture(move) (move & 0x100000)
+#define get_move_double_push(move) (move & 0x200000)
+#define get_move_enpassant(move) (move & 0x400000)
+#define get_move_castling(move) (move & 0x800000)
+
 
 
  // check if square is attacked by the given side (no need for queen as it's occupancy is the same as in bishop | rook)
@@ -831,7 +859,7 @@ void handle_piece_moves(Board* board, AttackTables* attack_tables, int piece, co
 	U64 current_bb = board->bitboards[piece];
 	while (current_bb) {
 		int source_square = get_ls1b_index(current_bb);
-		U64 attacks;
+		U64 attacks = 0ULL;
 
 		// Get appropriate attacks based on piece type
 		if (piece == N || piece == n)
@@ -1033,7 +1061,6 @@ AttackTables* init_attack_tables() {
 }
 
 
-
 // ================================
 // ============= MAIN =============
 // ================================
@@ -1045,6 +1072,15 @@ int main() {
 	printf("RT Engine\n");
 	parse_FEN(board, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ");
 	print_board(board);
-	generate_moves(board, tables);
+	int move = encode_move(e4, e5, P, 0, 0, 0, 0, 0,);
+	printf("Source: %s\n", square_to_coords[get_move_source(move)]);
+	printf("Target: %s\n", square_to_coords[get_move_target(move)]);
+	printf("Piece: %c\n", ascii_pieces[get_move_piece(move)]);
+	printf("Promoted: %c\n", ascii_pieces[get_move_promoted(move)]);
+	printf("Capture: %d\n", get_move_capture(move) ? 1 : 0);
+	printf("D push: %d\n", get_move_double_push(move) ? 1 : 0);
+	printf("Enpassant: %d\n", get_move_enpassant(move) ? 1 : 0);
+	printf("Castling: %d\n", get_move_castling(move) ? 1 : 0);
+	//generate_moves(board, tables);
 	return 0;
 }
