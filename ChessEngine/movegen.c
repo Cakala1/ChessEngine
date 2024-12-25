@@ -231,7 +231,7 @@ int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag
 		clear_bit(board->bitboards[piece], source_square);
 		set_bit(board->bitboards[piece], target_square);
 
-		if (get_move_capture(move)) {
+		if (capture) {
 			// range for our loop
 			int start_piece, end_piece;
 
@@ -256,6 +256,12 @@ int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag
 				}
 			}
 		}
+
+		if (promoted) {
+			clear_bit(board->bitboards[piece], target_square);
+			set_bit(board->bitboards[promoted], target_square);
+		}
+
 	}
 	else {
 		// make sure its a capture
