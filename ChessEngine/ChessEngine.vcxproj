@@ -127,7 +127,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="attacks.c" />
+    <ClCompile Include="board.c" />
+    <ClCompile Include="globals.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="movegen.c" />
+    <ClCompile Include="randoms.c" />
+    <ClCompile Include="utils.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="attacks.h" />
+    <ClInclude Include="board.h" />
+    <ClInclude Include="globals.h" />
+    <ClInclude Include="movegen.h" />
+    <ClInclude Include="randoms.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
