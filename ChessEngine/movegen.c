@@ -262,6 +262,11 @@ int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag
 			set_bit(board->bitboards[promoted], target_square);
 		}
 
+		if (enpassant) {
+			board->side == white ? 
+				clear_bit(board->bitboards[p], target_square + 8) : clear_bit(board->bitboards[P], target_square - 8);
+		}
+
 	}
 	else {
 		// make sure its a capture
