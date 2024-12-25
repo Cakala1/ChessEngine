@@ -1,4 +1,5 @@
 ﻿#include <stdio.h>
+#include <string.h>
 #include "board.h"
 #include "attacks.h"
 #include "movegen.h"
@@ -17,13 +18,17 @@
 
 
 int main() {
+	printf("RT Engine\n");
 	Board* board = create_board();
 	AttackTables* tables = init_attack_tables();
-	printf("RT Engine\n");
-	parse_FEN(board, tricky_position);
+
+	parse_FEN(board, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq c6 0 1 ");
 	print_board(board);
-	Moves moves[5];
-	generate_moves(board, tables, moves);
-	print_move_list(moves);
+
+	Board* copied = copy_board(board);
+	parse_FEN(board, empty_board);
+	print_board(board);
+	board = copy_board(copied);
+	print_board(board);
 	return 0;
 }
