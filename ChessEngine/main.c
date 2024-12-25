@@ -32,11 +32,10 @@ int main() {
 		copied = copy_board(board);
 		make_move(board, tables, move, all_moves);
 		print_board(board);
-		print_move(move);
 		board = copy_board(copied);
 		getchar();
 	}
-
+	
 	free(board);
 	free(tables);
 	return 0;

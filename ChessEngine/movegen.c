@@ -66,13 +66,9 @@ void handle_piece_moves(Board* board, AttackTables* attack_tables, Moves* move_l
 
 		while (attacks) {
 			int target_square = get_ls1b_index(attacks);
-			int is_capture = (get_bit((board->side == white) ? board->occupancies[black] : board->occupancies[white], target_square)) ? 1 : 0;
-			printf("%s %s: %s to %s\n",
-				piece_name,
-				is_capture ? "capture" : "move",
-				square_to_coords[source_square],
-				square_to_coords[target_square]);
-			add_move(move_list, encode_move(source_square, target_square, piece, is_capture, 0, 0, 0, 0));
+			int is_capture = get_bit((board->side == white) ? board->occupancies[black] : board->occupancies[white], target_square);
+			is_capture = is_capture ? 1 : 0;
+			add_move(move_list, encode_move(source_square, target_square, piece, 0, is_capture, 0, 0, 0));
 			clear_bit(attacks, target_square);
 		}
 		clear_bit(current_bb, source_square);
@@ -226,16 +222,41 @@ int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag
 		int target_square = get_move_target(move);
 		int piece = get_move_piece(move);
 		int promoted = get_move_promoted(move);
-		int capture = get_move_capture(move);
+		int capture = get_move_capture(move) ? 1 : 0;
 		int double_push = get_move_double_push(move);
 		int enpassant = get_move_enpassant(move);
 		int castling = get_move_castling(move);
-
+		print_move(move);
 		// moving piece from source to target
 		clear_bit(board->bitboards[piece], source_square);
 		set_bit(board->bitboards[piece], target_square);
+
+		if (get_move_capture(move)) {
+			// range for our loop
+			int start_piece, end_piece;
+
+			// white to move
+			if (board->side == white)
+			{
+				start_piece = p;
+				end_piece = k;
+			}
+
+			// black to move
+			else
+			{
+				start_piece = P;
+				end_piece = K;
+			}
+
+			for (int _piece = start_piece; _piece <= end_piece; _piece++) {
+				if (get_bit(board->bitboards[_piece], target_square)) {
+					clear_bit(board->bitboards[_piece], target_square);
+					break;
+				}
+			}
+		}
 	}
-	// only captures
 	else {
 		// make sure its a capture
 		if (get_move_capture(move)) {
