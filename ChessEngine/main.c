@@ -20,14 +20,10 @@ int main() {
 	Board* board = create_board();
 	AttackTables* tables = init_attack_tables();
 	printf("RT Engine\n");
-	parse_FEN(board, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ");
+	parse_FEN(board, tricky_position);
 	print_board(board);
-	Moves* move_list = create_moves();
-	int move1 = encode_move(e4, e5, P, N, 0, 0, 0, 0);
-	int move2 = encode_move(d5, d6, P, Q, 0, 0, 0, 0);
-	add_move(move_list, move1);
-	add_move(move_list, move2);
-	print_move_list(move_list);
-	//generate_moves(board, tables);
+	Moves moves[5];
+	generate_moves(board, tables, moves);
+	print_move_list(moves);
 	return 0;
 }

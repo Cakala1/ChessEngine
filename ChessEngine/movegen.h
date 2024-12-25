@@ -38,13 +38,12 @@ typedef struct {
 	int count;
 } Moves;
 
-Moves* create_moves();
 void add_move(Moves* moves_list, int move);
 void print_move(int move);
 void print_move_list(Moves* move_list);
-void handle_piece_moves(Board* board, AttackTables* attack_tables, int piece, const char* piece_name);
-void handle_pawn_moves(Board* board, AttackTables* attack_tables, int side);
-void handle_castle_moves(Board* board, AttackTables* attack_tables, int side);
-void generate_moves(Board* board, AttackTables* attack_tables);
+void handle_pawn_moves(Board* board, AttackTables* attack_tables, Moves* move_list, int side);
+void handle_piece_moves(Board* board, AttackTables* attack_tables, Moves* move_list, int piece, const char* piece_name);
+void handle_castle_moves(Board* board, AttackTables* attack_tables, Moves* move_list, int side);
+void generate_moves(Board* board, AttackTables* attack_tables, Moves* move_list);
 
 #endif 
