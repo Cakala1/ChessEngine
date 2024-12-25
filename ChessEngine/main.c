@@ -103,6 +103,17 @@ int char_pieces[] = {
 	['k'] = k,
 };
 
+char promoted_pieces[] = {
+	[Q] = 'q',
+	[R] = 'r',
+	[B] = 'b',
+	[N] = 'n',
+	[q] = 'q',
+	[r] = 'r',
+	[b] = 'b',
+	[n] = 'n',
+};
+
 // ===============================================
 // ==================== BOARD ====================
 // ===============================================
@@ -126,7 +137,7 @@ void reset_board(Board* board) {
 }
 
 Board* create_board() {
-	Board* board = malloc(sizeof(Board));
+	Board* board = (Board*)malloc(sizeof(Board));
 	if (!board) {
 		fprintf(stderr, "Failed to allocate memory for board.\n");
 		exit(1);
@@ -841,6 +852,53 @@ U64 get_queen_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
 
 
 
+typedef struct {
+	int moves[256];
+	int count;
+} Moves;
+
+Moves* create_moves() {
+	Moves* moves = (Moves*)malloc(sizeof(Moves));
+	if (!moves) {
+		fprintf(stderr, "Failed to allocate memory for moves.\n");
+		exit(1);
+	}
+	moves->count = 0;
+	return moves;
+}
+
+void add_move(Moves* moves_list, int move) {
+	moves_list->moves[moves_list->count++] = move;
+}
+
+
+void print_move(int move) {
+	printf("%s%s%c\n",
+		square_to_coords[get_move_source(move)],
+		square_to_coords[get_move_target(move)],
+		ascii_pieces[get_move_promoted(move)]);
+}
+
+void print_move_list(Moves* move_list) {
+	printf("\nmove     piece     capture    double_push    enpassant    castling\n");
+	int _count = 0;
+	for (; _count < move_list->count; _count++) {
+		int move = move_list->moves[_count];
+		printf("%s%s%c    %c         %d          %d              %d             %d\n",
+			square_to_coords[get_move_source(move)],
+			square_to_coords[get_move_target(move)],
+			ascii_pieces[get_move_promoted(move)],
+			ascii_pieces[get_move_piece(move)],
+			get_move_capture(move) ? 1 : 0,
+			get_move_double_push(move) ? 1 : 0,
+			get_move_enpassant(move) ? 1 : 0,
+			get_move_castling(move) ? 1 : 0
+		);
+	}
+	printf("\n\nTotal number of moves: %d\n\n", _count);
+}
+
+
  // check if square is attacked by the given side (no need for queen as it's occupancy is the same as in bishop | rook)
 int is_square_attacked(Board* board, AttackTables* attack_tables, int square, int side) {
 	 int other_side = (side == white) ? black : white;
@@ -1041,7 +1099,7 @@ void generate_moves(Board* board, AttackTables* attack_tables) {
 // ================================
 
 AttackTables* init_attack_tables() {
-	AttackTables* tables = malloc(sizeof(AttackTables));
+	AttackTables* tables = (AttackTables*)malloc(sizeof(AttackTables));
 	if (!tables) {
 		fprintf(stderr, "Failed to allocate memory for attack tables\n");
 		exit(1);
@@ -1061,6 +1119,7 @@ AttackTables* init_attack_tables() {
 }
 
 
+
 // ================================
 // ============= MAIN =============
 // ================================
@@ -1072,15 +1131,12 @@ int main() {
 	printf("RT Engine\n");
 	parse_FEN(board, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ");
 	print_board(board);
-	int move = encode_move(e4, e5, P, 0, 0, 0, 0, 0,);
-	printf("Source: %s\n", square_to_coords[get_move_source(move)]);
-	printf("Target: %s\n", square_to_coords[get_move_target(move)]);
-	printf("Piece: %c\n", ascii_pieces[get_move_piece(move)]);
-	printf("Promoted: %c\n", ascii_pieces[get_move_promoted(move)]);
-	printf("Capture: %d\n", get_move_capture(move) ? 1 : 0);
-	printf("D push: %d\n", get_move_double_push(move) ? 1 : 0);
-	printf("Enpassant: %d\n", get_move_enpassant(move) ? 1 : 0);
-	printf("Castling: %d\n", get_move_castling(move) ? 1 : 0);
+	Moves* move_list = create_moves();
+	int move1 = encode_move(e4, e5, P, N, 0, 0, 0, 0);
+	int move2 = encode_move(d5, d6, P, Q, 0, 0, 0, 0);
+	add_move(move_list, move1);
+	add_move(move_list, move2);
+	print_move_list(move_list);
 	//generate_moves(board, tables);
 	return 0;
 }
