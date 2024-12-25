@@ -5,7 +5,6 @@
 #include "utils.h"
 #include "globals.h"
 
-
 void add_move(Moves* moves_list, int move) {
 	moves_list->moves[moves_list->count++] = move;
 }
@@ -14,7 +13,7 @@ void print_move(int move) {
 	printf("%s%s%c\n",
 		square_to_coords[get_move_source(move)],
 		square_to_coords[get_move_target(move)],
-		ascii_pieces[get_move_promoted(move)]);
+		promoted_pieces[get_move_promoted(move)]);
 }
 
 void print_move_list(Moves* move_list) {
@@ -217,4 +216,32 @@ void generate_moves(Board* board, AttackTables* attack_tables, Moves* move_list)
 
 	// Handle castling
 	handle_castle_moves(board, attack_tables, move_list, board->side);
+}
+
+int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag) {
+	if (move_flag == all_moves) {
+		Board* copied = copy_board(board);
+
+		int source_square = get_move_source(move);
+		int target_square = get_move_target(move);
+		int piece = get_move_piece(move);
+		int promoted = get_move_promoted(move);
+		int capture = get_move_capture(move);
+		int double_push = get_move_double_push(move);
+		int enpassant = get_move_enpassant(move);
+		int castling = get_move_castling(move);
+
+		// moving piece from source to target
+		clear_bit(board->bitboards[piece], source_square);
+		set_bit(board->bitboards[piece], target_square);
+	}
+	// only captures
+	else {
+		// make sure its a capture
+		if (get_move_capture(move)) {
+			make_move(board, attack_tables, move, all_moves);
+		}
+		return 0;
+	}
+	return 0;
 }

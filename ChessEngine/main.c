@@ -22,13 +22,22 @@ int main() {
 	Board* board = create_board();
 	AttackTables* tables = init_attack_tables();
 
-	parse_FEN(board, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq c6 0 1 ");
+	parse_FEN(board, tricky_position);
 	print_board(board);
-
+	Moves move_list[1];
 	Board* copied = copy_board(board);
-	parse_FEN(board, empty_board);
-	print_board(board);
-	board = copy_board(copied);
-	print_board(board);
+	generate_moves(board, tables, move_list);
+	for (int i = 0; i < move_list->count; i++) {
+		int move = move_list->moves[i];
+		copied = copy_board(board);
+		make_move(board, tables, move, all_moves);
+		print_board(board);
+		print_move(move);
+		board = copy_board(copied);
+		getchar();
+	}
+
+	free(board);
+	free(tables);
 	return 0;
 }

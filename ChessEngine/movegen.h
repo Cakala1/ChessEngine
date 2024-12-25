@@ -21,6 +21,9 @@
 */
 
 
+enum { all_moves, only_captures };
+
+
 #define encode_move(source, target, piece, promoted, capture, double_push, enpassant, castling) \
 	(source) | (target << 6) | (piece << 12) | (promoted << 16) | (capture << 20) | (double_push << 21) | (enpassant << 22) | (castling << 23)\
 
@@ -32,6 +35,7 @@
 #define get_move_double_push(move) (move & 0x200000)
 #define get_move_enpassant(move) (move & 0x400000)
 #define get_move_castling(move) (move & 0x800000)
+
 
 typedef struct {
 	int moves[256];
@@ -45,5 +49,6 @@ void handle_pawn_moves(Board* board, AttackTables* attack_tables, Moves* move_li
 void handle_piece_moves(Board* board, AttackTables* attack_tables, Moves* move_list, int piece, const char* piece_name);
 void handle_castle_moves(Board* board, AttackTables* attack_tables, Moves* move_list, int side);
 void generate_moves(Board* board, AttackTables* attack_tables, Moves* move_list);
+int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag);
 
 #endif 
