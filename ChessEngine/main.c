@@ -7,6 +7,7 @@
 #include "globals.h"
 #include "randoms.h"
 #include "utils.h"
+#include "perft.h"
 
 // FEN dedug positions
 #define empty_board "8/8/8/8/8/8/8/8 w - - "
@@ -25,32 +26,13 @@ int main() {
 	printf("RT Engine\n");
 	Board* board = create_board();
 	AttackTables* tables = init_attack_tables();
-
-	parse_FEN(board, "r3k2r/p1ppRpb1/1n2pnp1/3PN3/1p2P3/2N2Q1p/PPPBqPPP/R3K2R b KQkq - 0 1 ");
-	Moves move_list[1];
-	Board* copied = copy_board(board);
-	generate_moves(board, tables, move_list);
-	printf("%d ", is_square_attacked(board, tables, e1, black));
+	parse_FEN(board, start_position);
 	int startTime = get_time_ms();
 	
-	for (int i = 0; i < move_list->count; i++) {
-		int move = move_list->moves[i];
-		copied = copy_board(board);
-
-		if (!make_move(board, tables, move, all_moves)) {
-			board = copy_board(copied);
-			continue;
-		}
-
-		print_move(move);
-		print_board(board);
-		board = copy_board(copied);
-		getchar();
-		//print_board(board);
-		//getchar();
-	}
-
-	printf("time taken to execute: %dms", get_time_ms() - startTime);
-	
+	perft_driver(board, tables, 5);
+	printf("time taken to execute: %dms\n", get_time_ms() - startTime);
+	printf("Nodes: %ld\n", nodes);
+	free(board);
+	free(tables);
 	return 0;
 }

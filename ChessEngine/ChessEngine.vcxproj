@@ -132,6 +132,7 @@
     <ClCompile Include="globals.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="movegen.c" />
+    <ClCompile Include="perft.c" />
     <ClCompile Include="randoms.c" />
     <ClCompile Include="utils.c" />
   </ItemGroup>
@@ -140,6 +141,7 @@
     <ClInclude Include="board.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="movegen.h" />
+    <ClInclude Include="perft.h" />
     <ClInclude Include="randoms.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>

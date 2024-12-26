@@ -36,6 +36,9 @@
     <ClCompile Include="movegen.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="perft.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="globals.h">
@@ -54,6 +57,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="movegen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="perft.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
