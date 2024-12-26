@@ -1,5 +1,6 @@
 ﻿#include <stdio.h>
 #include <string.h>
+#include <Windows.h>
 #include "board.h"
 #include "attacks.h"
 #include "movegen.h"
@@ -25,11 +26,12 @@ int main() {
 	Board* board = create_board();
 	AttackTables* tables = init_attack_tables();
 
-	parse_FEN(board, "r3k2r/p1pp1pb1/1n2pnp1/3PN3/1p2P3/2N2Q1p/PPPBqPPP/R3K2R w KQkq - 0 1 ");
+	parse_FEN(board, "r3k2r/p1ppRpb1/1n2pnp1/3PN3/1p2P3/2N2Q1p/PPPBqPPP/R3K2R b KQkq - 0 1 ");
 	Moves move_list[1];
 	Board* copied = copy_board(board);
 	generate_moves(board, tables, move_list);
 	printf("%d ", is_square_attacked(board, tables, e1, black));
+	int startTime = get_time_ms();
 	
 	for (int i = 0; i < move_list->count; i++) {
 		int move = move_list->moves[i];
@@ -47,6 +49,8 @@ int main() {
 		//print_board(board);
 		//getchar();
 	}
+
+	printf("time taken to execute: %dms", get_time_ms() - startTime);
 	
 	return 0;
 }

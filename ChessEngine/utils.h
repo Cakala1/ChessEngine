@@ -14,4 +14,6 @@ int get_ls1b_index(U64 bb);
 
 void print_bitboard(U64 bb);
 
+int get_time_ms();
+
 #endif 

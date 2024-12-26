@@ -35,3 +35,7 @@ void print_bitboard(U64 bb) {
 	// print bitboard as 64 bit unsigned integer
 	printf("Bitboard value: %llu\n", bb);
 }
+
+int get_time_ms(){
+	return GetTickCount();
+}
