@@ -351,13 +351,44 @@ void print_attacked_squares(Board* board, AttackTables* attack_tables, int side)
 }
 
 // check if square is attacked by the given side (no need for queen as it's occupancy is the same as in bishop | rook)
+//int is_square_attacked(Board* board, AttackTables* attack_tables, int square, int side) {
+//	int other_side = (side == white) ? black : white;
+//	if (attack_tables->pawn_attacks[other_side][square] & board->bitboards[(side == white) ? P : p]) return 1;
+//	if ((attack_tables->knight_attacks[square] & board->bitboards[side == white ? N : n])) return 1;
+//	if ((attack_tables->king_attacks[square] & board->bitboards[side == white ? K : k])) return 1;
+//	if (get_bishop_attacks(attack_tables, square, board->occupancies[both]) & board->bitboards[side == white ? B : b]) return 1;
+//	if (get_rook_attacks(attack_tables, square, board->occupancies[both]) & board->bitboards[side == white ? R : r]) return 1;
+//	
+//	
+//
+//	return 0;
+//}
+
 int is_square_attacked(Board* board, AttackTables* attack_tables, int square, int side) {
-	int other_side = (side == white) ? black : white;
-	if (attack_tables->pawn_attacks[other_side][square] & board->bitboards[(side == white) ? P : p]) return 1;
-	if ((attack_tables->knight_attacks[square] & board->bitboards[side == white ? N : n])) return 1;
-	if ((attack_tables->king_attacks[square] & board->bitboards[side == white ? K : k])) return 1;
-	if (get_bishop_attacks(attack_tables, square, board->occupancies[both]) & board->bitboards[side == white ? B : b]) return 1;
-	if (get_rook_attacks(attack_tables, square, board->occupancies[both]) & board->bitboards[side == white ? R : r]) return 1;
+	// attacked by white pawns
+	if ((side == white) && (attack_tables->pawn_attacks[black][square] & board->bitboards[P])) return 1;
+
+	// attacked by black pawns
+	if ((side == black) && (attack_tables->pawn_attacks[white][square] & board->bitboards[p])) return 1;
+
+	// attacked by knights
+	if (attack_tables->knight_attacks[square] & ((side == white) ? board->bitboards[N] : board->bitboards[n])) return 1;
+
+	// attacked by bishops
+	if (get_bishop_attacks(attack_tables, square, board->occupancies[both]) & ((side == white) ? board->bitboards[B] : board->bitboards[b])) return 1;
+
+	// attacked by rooks
+	if (get_rook_attacks(attack_tables, square, board->occupancies[both]) & ((side == white) ? board->bitboards[R] : board->bitboards[r])) return 1;
+
+	// attacked by bishops
+	if (get_queen_attacks(attack_tables, square, board->occupancies[both]) & ((side == white) ? board->bitboards[Q] : board->bitboards[q])) return 1;
+
+	// attacked by kings
+	if (attack_tables->king_attacks[square] & ((side == white) ? board->bitboards[K] : board->bitboards[k])) return 1;
+
+	// by default return false
+	return 0;
+	
 
 	return 0;
 }

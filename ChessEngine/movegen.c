@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "movegen.h"
 #include "randoms.h"
 #include "utils.h"
@@ -66,9 +67,17 @@ void handle_piece_moves(Board* board, AttackTables* attack_tables, Moves* move_l
 
 		while (attacks) {
 			int target_square = get_ls1b_index(attacks);
-			int is_capture = get_bit((board->side == white) ? board->occupancies[black] : board->occupancies[white], target_square);
-			is_capture = is_capture ? 1 : 0;
-			add_move(move_list, encode_move(source_square, target_square, piece, 0, is_capture, 0, 0, 0));
+			/*int is_capture = get_bit(((board->side == white) ? board->occupancies[black] : board->occupancies[white]), target_square);
+			is_capture = is_capture ? 1 : 0;*/
+
+			if (!get_bit(((board->side == white) ? board->occupancies[black] : board->occupancies[white]), target_square))
+				add_move(move_list, encode_move(source_square, target_square, piece, 0, 0, 0, 0, 0));
+			else
+				// capture move
+				add_move(move_list, encode_move(source_square, target_square, piece, 0, 1, 0, 0, 0));
+
+			
+			//add_move(move_list, encode_move(source_square, target_square, piece, 0, is_capture, 0, 0, 0));
 			clear_bit(attacks, target_square);
 		}
 		clear_bit(current_bb, source_square);
@@ -129,9 +138,6 @@ void handle_pawn_moves(Board* board, AttackTables* attack_tables, Moves* move_li
 			U64 enpassant_attacks = attack_tables->pawn_attacks[side][source_square] & (1ULL << board->enpassant);
 			if (enpassant_attacks) {
 				int target_enpassant = get_ls1b_index(enpassant_attacks);
-				printf("Enpassant capture: %s to %s\n",
-					square_to_coords[source_square],
-					square_to_coords[target_enpassant]);
 				add_move(move_list, encode_move(source_square, target_enpassant, piece, 0, 0, 0, 1, 0));
 			}
 		}
@@ -147,7 +153,6 @@ void handle_castle_moves(Board* board, AttackTables* attack_tables, Moves* move_
 			if (!get_bit(board->occupancies[both], f1) && !get_bit(board->occupancies[both], g1)) {
 				if (!is_square_attacked(board, attack_tables, e1, black) &&
 					!is_square_attacked(board, attack_tables, f1, black)) {
-					printf("Castle move: e1 to g1\n");
 					add_move(move_list, encode_move(e1, g1, K, 0, 0, 0, 0, 1));
 				}
 			}
@@ -158,7 +163,6 @@ void handle_castle_moves(Board* board, AttackTables* attack_tables, Moves* move_
 				!get_bit(board->occupancies[both], d1)) {
 				if (!is_square_attacked(board, attack_tables, e1, black) &&
 					!is_square_attacked(board, attack_tables, d1, black)) {
-					printf("Castle move: e1 to c1\n");
 					add_move(move_list, encode_move(e1, c1, K, 0, 0, 0, 0, 1));
 				}
 			}
@@ -169,7 +173,6 @@ void handle_castle_moves(Board* board, AttackTables* attack_tables, Moves* move_
 			if (!get_bit(board->occupancies[both], f8) && !get_bit(board->occupancies[both], g8)) {
 				if (!is_square_attacked(board, attack_tables, e8, white) &&
 					!is_square_attacked(board, attack_tables, f8, white)) {
-					printf("Castle move: e8 to g8\n");
 					add_move(move_list, encode_move(e8, g8, k, 0, 0, 0, 0, 1));
 				}
 			}
@@ -180,7 +183,6 @@ void handle_castle_moves(Board* board, AttackTables* attack_tables, Moves* move_
 				!get_bit(board->occupancies[both], d8)) {
 				if (!is_square_attacked(board, attack_tables, e8, white) &&
 					!is_square_attacked(board, attack_tables, d8, white)) {
-					printf("Castle move: e8 to c8\n");
 					add_move(move_list, encode_move(e8, c8, k, 0, 0, 0, 0, 1));
 				}
 			}
@@ -214,6 +216,32 @@ void generate_moves(Board* board, AttackTables* attack_tables, Moves* move_list)
 	handle_castle_moves(board, attack_tables, move_list, board->side);
 }
 
+/*
+ 
+	CASTLING RIGHTS
+
+	 king & rooks didn't move:     1111 & 1111  =  1111    15
+
+	        white king  moved:     1111 & 1100  =  1100    12
+	  white king's rook moved:     1111 & 1110  =  1110    14
+	 white queen's rook moved:     1111 & 1101  =  1101    13
+
+			 black king moved:     1111 & 0011  =  1011    3
+	  black king's rook moved:     1111 & 1011  =  1011    11
+	 black queen's rook moved:     1111 & 0111  =  0111    7
+*/
+
+const int castling_rights[64] = {
+	 7, 15, 15, 15,  3, 15, 15, 11,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	15, 15, 15, 15, 15, 15, 15, 15,
+	13, 15, 15, 15, 12, 15, 15, 14
+};
+
 int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag) {
 	if (move_flag == all_moves) {
 		Board* copied = copy_board(board);
@@ -226,7 +254,6 @@ int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag
 		int double_push = get_move_double_push(move);
 		int enpassant = get_move_enpassant(move);
 		int castling = get_move_castling(move);
-		print_move(move);
 		// moving piece from source to target
 		clear_bit(board->bitboards[piece], source_square);
 		set_bit(board->bitboards[piece], target_square);
@@ -297,6 +324,39 @@ int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag
 				break;
 			}
 		}
+
+		// update castling rights
+		board->castle &= castling_rights[source_square];
+		board->castle &= castling_rights[target_square];
+
+		// reset occupancies
+		memset(board->occupancies, 0ULL, sizeof(board->occupancies));
+
+		// update white occupancies
+		for (int _piece = P; _piece <= K; _piece++) {
+			board->occupancies[white] |= board->bitboards[_piece];
+		}
+		
+		// update black occupancies
+		for (int _piece = p; _piece <= k; _piece++) {
+			board->occupancies[black] |= board->bitboards[_piece];
+		}
+		// update both occupancies
+		board->occupancies[both] |= board->occupancies[white] | board->occupancies[black];
+
+		board->side ^= 1;
+		//printf("%c\n", ascii_pieces[piece]);
+		//print_move(move);
+		//printf("Caputres: %d\n", is_square_attacked(board, attack_tables,
+		//	(board->side == white) ? get_ls1b_index(board->bitboards[k]) : get_ls1b_index(board->bitboards[K]), board->side));
+		if (is_square_attacked(board, attack_tables,
+			(board->side == white) ? get_ls1b_index(board->bitboards[k]) : get_ls1b_index(board->bitboards[K]), board->side)) {
+			board = copy_board(copied);
+			return 0;
+		}
+		else
+			return 1;
+		
 	}
 	else {
 		// make sure its a capture
@@ -305,5 +365,181 @@ int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag
 		}
 		return 0;
 	}
-	return 0;
 }
+
+//int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag)
+//{
+//	// quite moves
+//	if (move_flag == all_moves)
+//	{
+//		// preserve board state
+//		Board* copied = copy_board(board);
+//
+//		// parse move
+//		int source_square = get_move_source(move);
+//		int target_square = get_move_target(move);
+//		int piece = get_move_piece(move);
+//		int promoted_piece = get_move_promoted(move);
+//		int capture = get_move_capture(move);
+//		int double_push = get_move_double_push(move);
+//		int enpass = get_move_enpassant(move);
+//		int castling = get_move_castling(move);
+//
+//		// move piece
+//		clear_bit(board->bitboards[piece], source_square);
+//		set_bit(board->bitboards[piece], target_square);
+//
+//		// handling capture moves
+//		if (capture)
+//		{
+//			// pick up bitboard piece index ranges depending on side
+//			int start_piece, end_piece;
+//
+//			// white to move
+//			if (board->side == white)
+//			{
+//				start_piece = p;
+//				end_piece = k;
+//			}
+//
+//			// black to move
+//			else
+//			{
+//				start_piece = P;
+//				end_piece = K;
+//			}
+//
+//			// loop over bitboards opposite to the current side to move
+//			for (int bb_piece = start_piece; bb_piece <= end_piece; bb_piece++)
+//			{
+//				// if there's a piece on the target square
+//				if (get_bit(board->bitboards[bb_piece], target_square))
+//				{
+//					// remove it from corresponding bitboard
+//					clear_bit(board->bitboards[bb_piece], target_square);
+//					break;
+//				}
+//			}
+//		}
+//
+//		// handle pawn promotions
+//		if (promoted_piece)
+//		{
+//			// erase the pawn from the target square
+//			clear_bit(board->bitboards[(board->side == white) ? P : p], target_square);
+//
+//			// set up promoted piece on chess board
+//			set_bit(board->bitboards[promoted_piece], target_square);
+//		}
+//
+//		// handle enpassant captures
+//		if (enpass)
+//		{
+//			// erase the pawn depending on side to move
+//			(board->side == white) ? clear_bit(board->bitboards[p], target_square + 8) :
+//				clear_bit(board->bitboards[P], target_square - 8);
+//		}
+//
+//		// reset enpassant square
+//		board->enpassant = no_sq;
+//
+//		// handle double pawn push
+//		if (double_push)
+//		{
+//			// set enpassant aquare depending on side to move
+//			(board->side == white) ? (board->enpassant = target_square + 8) :
+//				(board->enpassant = target_square - 8);
+//		}
+//
+//		// handle castling moves
+//		if (castling)
+//		{
+//			// switch target square
+//			switch (target_square)
+//			{
+//				// white castles king side
+//			case (g1):
+//				// move H rook
+//				clear_bit(board->bitboards[R], h1);
+//				set_bit(board->bitboards[R], f1);
+//				break;
+//
+//				// white castles queen side
+//			case (c1):
+//				// move A rook
+//				clear_bit(board->bitboards[R], a1);
+//				set_bit(board->bitboards[R], d1);
+//				break;
+//
+//				// black castles king side
+//			case (g8):
+//				// move H rook
+//				clear_bit(board->bitboards[r], h8);
+//				set_bit(board->bitboards[r], f8);
+//				break;
+//
+//				// black castles queen side
+//			case (c8):
+//				// move A rook
+//				clear_bit(board->bitboards[r], a8);
+//				set_bit(board->bitboards[r], d8);
+//				break;
+//			}
+//		}
+//
+//		// update castling rights
+//		board->castle &= castling_rights[source_square];
+//		board->castle &= castling_rights[target_square];
+//
+//		// reset occupancies
+//		memset(board->occupancies, 0ULL, 24);
+//
+//		// loop over white pieces bitboards
+//		for (int bb_piece = P; bb_piece <= K; bb_piece++)
+//			// update white occupancies
+//			board->occupancies[white] |= board->bitboards[bb_piece];
+//
+//		// loop over black pieces bitboards
+//		for (int bb_piece = p; bb_piece <= k; bb_piece++)
+//			// update black occupancies
+//			board->occupancies[black] |= board->bitboards[bb_piece];
+//
+//		// update both sides occupancies
+//		board->occupancies[both] |= board->occupancies[white];
+//		board->occupancies[both] |= board->occupancies[black];
+//
+//		// change side
+//		board->side ^= 1;
+//
+//		// make sure that king has not been exposed into a check
+//		if (is_square_attacked(board, attack_tables, 
+//			(board->side == white) ? get_ls1b_index(board->bitboards[k]) : get_ls1b_index(board->bitboards[K]), board->side))
+//		{
+//			// take move back
+//			board = copy_board(copied);
+//
+//			// return illegal move
+//			return 0;
+//		}
+//
+//		//
+//		else
+//			// return legal move
+//			return 1;
+//
+//
+//	}
+//
+//	// capture moves
+//	else
+//	{
+//		// make sure move is the capture
+//		if (get_move_capture(move))
+//			make_move(board, attack_tables, move, all_moves);
+//
+//		// otherwise the move is not a capture
+//		else
+//			// don't make it
+//			return 0;
+//	}
+//}
