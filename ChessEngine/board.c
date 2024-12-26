@@ -24,19 +24,12 @@ Board* create_board() {
 	return board;
 }
 
-Board* copy_board(Board* bb) {
-	Board* board = (Board*)malloc(sizeof(Board));
-	if (!board) {
-		fprintf(stderr, "Failed to allocate memory for board.\n");
-		exit(1);
-	}
-	memcpy(board->bitboards, bb->bitboards, sizeof(bb->bitboards));
-	memcpy(board->occupancies, bb->occupancies, sizeof(bb->occupancies));
-	board->side = bb->side;
-	board->enpassant = bb->enpassant;
-	board->castle = bb->castle;
-
-	return board;
+void copy_board(Board* bb, Board* copy) {
+	memcpy(copy->bitboards, bb->bitboards, sizeof(bb->bitboards));
+	memcpy(copy->occupancies, bb->occupancies, sizeof(bb->occupancies));
+	copy->side = bb->side;
+	copy->enpassant = bb->enpassant;
+	copy->castle = bb->castle;
 }
 
 

@@ -244,7 +244,8 @@ const int castling_rights[64] = {
 
 int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag) {
 	if (move_flag == all_moves) {
-		Board* copied = copy_board(board);
+		Board copied;
+		copy_board(board, &copied);
 
 		int source_square = get_move_source(move);
 		int target_square = get_move_target(move);
@@ -347,7 +348,7 @@ int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag
 		board->side ^= 1;
 		if (is_square_attacked(board, attack_tables,
 			(board->side == white) ? get_ls1b_index(board->bitboards[k]) : get_ls1b_index(board->bitboards[K]), board->side)) {
-			board = copy_board(copied);
+			copy_board(&copied, board);
 			return 0;
 		}
 		else

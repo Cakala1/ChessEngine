@@ -12,7 +12,7 @@ typedef struct {
 
 void reset_board(Board* board);
 Board* create_board();
-Board* copy_board(Board* bb);
+void copy_board(Board* bb, Board* copy);
 void print_board(Board* board);
 void parse_FEN(Board* board, char* fen);
 

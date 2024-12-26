@@ -28,11 +28,8 @@ int main() {
 	AttackTables* tables = init_attack_tables();
 	parse_FEN(board, start_position);
 	int startTime = get_time_ms();
-	
-	perft_driver(board, tables, 5);
+	perft_driver(board, tables, 6);
 	printf("time taken to execute: %dms\n", get_time_ms() - startTime);
 	printf("Nodes: %ld\n", nodes);
-	free(board);
-	free(tables);
 	return 0;
 }

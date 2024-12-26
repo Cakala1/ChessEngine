@@ -1,6 +1,6 @@
 #include "utils.h"
 
-count_bits(U64 bb) {
+int count_bits(U64 bb) {
 	int bit_count = 0;
 	while (bb) {
 		bit_count++;
@@ -9,7 +9,7 @@ count_bits(U64 bb) {
 	return bit_count;
 }
 
-get_ls1b_index(U64 bb) {
+int get_ls1b_index(U64 bb) {
 	if (!bb) return -1;
 	return count_bits(((bb & (~bb + 1)) - 1));
 }

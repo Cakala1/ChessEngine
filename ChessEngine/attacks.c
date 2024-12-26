@@ -296,7 +296,7 @@ void generate_sliders_attacks(AttackTables* attack_tables, int is_bishop) {
 }
 
 
-U64 get_bishop_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
+inline U64 get_bishop_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
 	occupancy &= attack_tables->bishop_masks[square];
 	occupancy *= bishop_magic_numbers[square];
 	occupancy >>= 64 - bishop_relevant_bits[square];
@@ -304,14 +304,14 @@ U64 get_bishop_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
 	return attack_tables->bishop_attacks[square][occupancy];
 }
 
-U64 get_rook_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
+inline U64 get_rook_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
 	occupancy &= attack_tables->rook_masks[square];
 	occupancy *= rook_magic_numbers[square];
 	occupancy >>= 64 - rook_relevant_bits[square];
 	return attack_tables->rook_attacks[square][occupancy];
 }
 
-U64 get_queen_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
+inline U64 get_queen_attacks(AttackTables* attack_tables, int square, U64 occupancy) {
 	return (get_bishop_attacks(attack_tables, square, occupancy) | get_rook_attacks(attack_tables, square, occupancy));
 }
 
