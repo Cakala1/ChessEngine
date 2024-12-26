@@ -350,20 +350,6 @@ void print_attacked_squares(Board* board, AttackTables* attack_tables, int side)
 	printf("\n    a b c d e f g h\n\n");
 }
 
-// check if square is attacked by the given side (no need for queen as it's occupancy is the same as in bishop | rook)
-//int is_square_attacked(Board* board, AttackTables* attack_tables, int square, int side) {
-//	int other_side = (side == white) ? black : white;
-//	if (attack_tables->pawn_attacks[other_side][square] & board->bitboards[(side == white) ? P : p]) return 1;
-//	if ((attack_tables->knight_attacks[square] & board->bitboards[side == white ? N : n])) return 1;
-//	if ((attack_tables->king_attacks[square] & board->bitboards[side == white ? K : k])) return 1;
-//	if (get_bishop_attacks(attack_tables, square, board->occupancies[both]) & board->bitboards[side == white ? B : b]) return 1;
-//	if (get_rook_attacks(attack_tables, square, board->occupancies[both]) & board->bitboards[side == white ? R : r]) return 1;
-//	
-//	
-//
-//	return 0;
-//}
-
 int is_square_attacked(Board* board, AttackTables* attack_tables, int square, int side) {
 	// attacked by white pawns
 	if ((side == white) && (attack_tables->pawn_attacks[black][square] & board->bitboards[P])) return 1;
