@@ -267,6 +267,36 @@ int make_move(Board* board, AttackTables* attack_tables, int move, int move_flag
 				clear_bit(board->bitboards[p], target_square + 8) : clear_bit(board->bitboards[P], target_square - 8);
 		}
 
+		board->enpassant = no_sq;
+		
+		if (double_push) {
+			board->enpassant = board->side == white ? target_square + 8 : target_square - 8;
+		}
+
+		if (castling) {
+			switch (target_square) {
+				// white - king side
+			case(g1):
+				clear_bit(board->bitboards[R], h1);
+				set_bit(board->bitboards[R], f1);
+				break;
+				// white - queen side
+			case(c1):
+				clear_bit(board->bitboards[R], a1);
+				set_bit(board->bitboards[R], d1);
+				break;
+				// black - king side
+			case(g8):
+				clear_bit(board->bitboards[r], h8);
+				set_bit(board->bitboards[r], f8);
+				break;
+				// black - queen side
+			case(c8):
+				clear_bit(board->bitboards[r], a8);
+				set_bit(board->bitboards[r], d8);
+				break;
+			}
+		}
 	}
 	else {
 		// make sure its a capture
