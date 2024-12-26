@@ -13,16 +13,6 @@ void reset_board(Board* board) {
 	board->castle = 0;
 }
 
-Board* create_board() {
-	Board* board = (Board*)malloc(sizeof(Board));
-	if (!board) {
-		fprintf(stderr, "Failed to allocate memory for board.\n");
-		exit(1);
-	}
-	reset_board(board);
-
-	return board;
-}
 
 void copy_board(Board* bb, Board* copy) {
 	memcpy(copy->bitboards, bb->bitboards, sizeof(bb->bitboards));

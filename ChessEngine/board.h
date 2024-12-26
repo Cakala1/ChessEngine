@@ -11,7 +11,6 @@ typedef struct {
 } Board;
 
 void reset_board(Board* board);
-Board* create_board();
 void copy_board(Board* bb, Board* copy);
 void print_board(Board* board);
 void parse_FEN(Board* board, char* fen);

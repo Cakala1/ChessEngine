@@ -24,12 +24,10 @@
 
 int main() {
 	printf("RT Engine\n");
-	Board* board = create_board();
+	Board board;
+	reset_board(&board);
 	AttackTables* tables = init_attack_tables();
-	parse_FEN(board, start_position);
-	int startTime = get_time_ms();
-	perft_driver(board, tables, 6);
-	printf("time taken to execute: %dms\n", get_time_ms() - startTime);
-	printf("Nodes: %ld\n", nodes);
+	parse_FEN(&board, tricky_position);
+	perft_test(&board, tables, 5);
 	return 0;
 }
