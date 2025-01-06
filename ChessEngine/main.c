@@ -8,6 +8,7 @@
 #include "randoms.h"
 #include "utils.h"
 #include "perft.h"
+#include "ui.h"
 
 // FEN dedug positions
 #define empty_board "8/8/8/8/8/8/8/8 w - - "
@@ -26,8 +27,12 @@ int main() {
 	printf("RT Engine\n");
 	Board board;
 	reset_board(&board);
-	AttackTables* tables = init_attack_tables();
-	parse_FEN(&board, tricky_position);
-	perft_test(&board, tables, 5);
+	AttackTables* attacks = init_attack_tables();
+	parse_FEN(&board, start_position);
+	print_board(&board);
+	int move = parse_move(&board, attacks, "e2e4");
+	if (move) make_move(&board, attacks, move, all_moves);
+	else printf("Illegal move\n\n");
+	print_board(&board);
 	return 0;
 }
