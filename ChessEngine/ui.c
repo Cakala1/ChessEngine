@@ -1,6 +1,8 @@
 #include "ui.h"
 #include "movegen.h"
 #include "globals.h"
+#include <string.h>
+
 int parse_move(Board* board, AttackTables* attacks, char* move_str) {
 	Moves move_list[1];
 
@@ -8,7 +10,6 @@ int parse_move(Board* board, AttackTables* attacks, char* move_str) {
 
 	int source_square = move_str[0] - 'a' + (8 - (move_str[1] - '0')) * 8;
 	int target_square = move_str[2] - 'a' + (8 - (move_str[3] - '0')) * 8;
-	printf("Source %s Target %s", square_to_coords[source_square], square_to_coords[target_square]);
 	for (int count = 0; count < move_list->count; count++) {
 		int move = move_list->moves[count];
 
@@ -40,4 +41,54 @@ int parse_move(Board* board, AttackTables* attacks, char* move_str) {
 
 	// illegal move
 	return 0;
+}
+
+void parse_position(Board* board, AttackTables* attacks, char* command) {
+	// shift by 9 bits to skip "position" from command 
+	command += 9;
+	// current character of command
+	char* curr = command;
+
+	// parse start position
+	if (!strncmp(curr, "startpos", 8)) {
+		parse_FEN(board, start_position);
+	}
+	// parse command
+	else {
+		// check if "fen" exists in command
+		curr = strstr(command, "fen");
+		
+		if (curr == NULL) {
+			parse_FEN(board, start_position);
+		}
+		else{
+			// shift by 4 bits to skip "fen" (and space)
+			curr += 4;
+
+			parse_FEN(board, curr);
+		}
+	}
+
+
+	// check if "moves" exists in command
+	curr = strstr(command, "moves");
+	if (curr != NULL) {
+		// shift pointer by 6 to skip "moves" (and space)
+		curr += 6;
+		while (curr != NULL) {
+			printf("%s\n", curr);
+			int move = parse_move(board, attacks, curr);
+
+			if (!move) break;
+
+			make_move(board, attacks, move, all_moves);
+
+			// move pointer to the end of move
+			while (*curr && *curr != ' ') curr++;
+
+			// skip the space
+			curr++;
+		}
+		printf("%s", curr);
+	}
 }
