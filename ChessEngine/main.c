@@ -10,6 +10,7 @@
 #include "perft.h"
 #include "ui.h"
 #include "evaluate.h"
+#include "search.h"
 
 // ================================
 // ============= MAIN =============
@@ -24,10 +25,8 @@ int main() {
 	reset_board(&board);
 	AttackTables* attacks = init_attack_tables();
 	
-	parse_FEN(&board, "1nbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ");
+	parse_FEN(&board, start_position);
 	print_board(&board);
-	printf("score: %d\n", evaluate(&board, attacks));
-
-	//uci_main(&board, attacks);
+	search_position(&board, attacks, 4);
 	return 0;
 }

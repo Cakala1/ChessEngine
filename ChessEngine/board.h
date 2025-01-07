@@ -11,7 +11,7 @@ typedef struct {
 } Board;
 
 void reset_board(Board* board);
-void copy_board(Board* bb, Board* copy);
+void copy_board(Board* bb, Board* copy); /* copies "bb" to "copy" */
 void print_board(Board* board);
 void parse_FEN(Board* board, char* fen);
 

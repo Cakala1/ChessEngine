@@ -11,7 +11,7 @@ void add_move(Moves* moves_list, int move) {
 }
 
 void print_move(int move) {
-	printf("%s%s%c\n",
+	printf("%s%s%c",
 		square_to_coords[get_move_source(move)],
 		square_to_coords[get_move_target(move)],
 		promoted_pieces[get_move_promoted(move)]);
@@ -96,10 +96,10 @@ void handle_pawn_moves(Board* board, AttackTables* attack_tables, Moves* move_li
 			if ((side == white && source_square >= a7 && source_square <= h7) || 
 				(side == black && source_square >= a2 && source_square <= h2)) 
 			{
-				add_move(move_list, encode_move(source_square, target_square, piece, Q, 0, 0, 0, 0));
-				add_move(move_list, encode_move(source_square, target_square, piece, R, 0, 0, 0, 0));
-				add_move(move_list, encode_move(source_square, target_square, piece, N, 0, 0, 0, 0));
-				add_move(move_list, encode_move(source_square, target_square, piece, B, 0, 0, 0, 0));
+				add_move(move_list, encode_move(source_square, target_square, piece, (side == white ? Q : q), 0, 0, 0, 0));
+				add_move(move_list, encode_move(source_square, target_square, piece, (side == white ? R : r), 0, 0, 0, 0));
+				add_move(move_list, encode_move(source_square, target_square, piece, (side == white ? N : n), 0, 0, 0, 0));
+				add_move(move_list, encode_move(source_square, target_square, piece, (side == white ? B : b), 0, 0, 0, 0));
 			}
 			else {
 				add_move(move_list, encode_move(source_square, target_square, piece, 0, 0, 0, 0, 0));
@@ -121,10 +121,10 @@ void handle_pawn_moves(Board* board, AttackTables* attack_tables, Moves* move_li
 			target_square = get_ls1b_index(attacks);
 			if ((side == white && source_square >= a7 && source_square <= h7) ||
 				(side == black && source_square >= a2 && source_square <= h2)) {
-				add_move(move_list, encode_move(source_square, target_square, piece, Q, 1, 0, 0, 0));
-				add_move(move_list, encode_move(source_square, target_square, piece, R, 1, 0, 0, 0));
-				add_move(move_list, encode_move(source_square, target_square, piece, N, 1, 0, 0, 0));
-				add_move(move_list, encode_move(source_square, target_square, piece, B, 1, 0, 0, 0));
+				add_move(move_list, encode_move(source_square, target_square, piece, (side == white ? Q : q), 1, 0, 0, 0));
+				add_move(move_list, encode_move(source_square, target_square, piece, (side == white ? R : r), 1, 0, 0, 0));
+				add_move(move_list, encode_move(source_square, target_square, piece, (side == white ? N : n), 1, 0, 0, 0));
+				add_move(move_list, encode_move(source_square, target_square, piece, (side == white ? B : b), 1, 0, 0, 0));
 			}
 			else {
 				add_move(move_list, encode_move(source_square, target_square, piece, 0, 1, 0, 0, 0));

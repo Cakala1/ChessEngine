@@ -5,6 +5,7 @@
 #include "movegen.h"
 #include "globals.h"
 #include "search.h"
+#include "perft.h"
 
 int parse_move(Board* board, AttackTables* attacks, char* move_str) {
 	Moves move_list[1];
@@ -101,13 +102,19 @@ void parse_position(Board* board, AttackTables* attacks, char* command) {
 void parse_go(Board* board, AttackTables* attacks, char* command){
 	int depth = -1;
 
-	char* curr_depth = NULL;
+	char* argument = NULL;
 
-	if (curr_depth = strstr(command, "depth")) {
-		depth = atoi(curr_depth + 6);
-	}else{
-		depth = 6;
+	if (argument = strstr(command, "depth")) {
+		depth = atoi(argument + 6);
 	}
+
+	if (argument = strstr(command, "perft")) {
+		depth = atoi(argument + 6);
+		perft_test(board, attacks, depth);
+
+		return;
+	}
+	
 
 	printf("Depth: %d\n", depth);
 	search_position(board, attacks, depth);
@@ -159,6 +166,10 @@ void uci_main(Board* board, AttackTables* attacks) {
 
 		else if (!strncmp(input, "uci", 3)) {
 			printf("id name RT\nid name Cakala1\nuciok\n");
+		}
+
+		else if (!strncmp(input, "d", 1)) {
+			print_board(board);
 		}
 	}
 }

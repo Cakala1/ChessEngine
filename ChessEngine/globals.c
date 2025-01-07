@@ -1,5 +1,7 @@
 #include "globals.h"
 
+long nodes = 0; 
+
 const char* square_to_coords[] = {
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
     "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
@@ -29,14 +31,14 @@ int char_pieces[] = {
 };
 
 char promoted_pieces[] = {
-   [Q] = 'q',
-   [R] = 'r',
-   [B] = 'b',
-   [N] = 'n',
-   [q] = 'q',
-   [r] = 'r',
-   [b] = 'b',
-   [n] = 'n',
+	[Q] = 'q',
+	[R] = 'r',
+	[B] = 'b',
+	[N] = 'n',
+	[q] = 'q',
+	[r] = 'r',
+	[b] = 'b',
+	[n] = 'n'
 };
 
 const int bishop_relevant_bits[64] = {

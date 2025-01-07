@@ -3,9 +3,7 @@
 #include "board.h"
 #include "attacks.h"
 #include "utils.h"
-
-
-long nodes = 0;
+#include "globals.h"
 
 
 static inline void perft_driver(Board* board, AttackTables* attack_tables, int depth) {
@@ -33,6 +31,7 @@ static inline void perft_driver(Board* board, AttackTables* attack_tables, int d
 }
 
 void perft_test(Board* board, AttackTables* attack_tables, int depth){
+	nodes = 0;
 	printf("Performence Test\n\n");
 	// base condition
 	if (depth == 0) {
