@@ -130,6 +130,7 @@
   <ItemGroup>
     <ClCompile Include="attacks.c" />
     <ClCompile Include="board.c" />
+    <ClCompile Include="evaluate.c" />
     <ClCompile Include="globals.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="movegen.c" />
@@ -142,6 +143,7 @@
   <ItemGroup>
     <ClInclude Include="attacks.h" />
     <ClInclude Include="board.h" />
+    <ClInclude Include="evaluate.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="movegen.h" />
     <ClInclude Include="perft.h" />
