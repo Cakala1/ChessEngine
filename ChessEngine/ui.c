@@ -100,7 +100,7 @@ void parse_position(Board* board, AttackTables* attacks, char* command) {
 
 
 void parse_go(Board* board, AttackTables* attacks, char* command){
-	int depth = -1;
+	int depth = 6;
 
 	char* argument = NULL;
 
@@ -108,7 +108,7 @@ void parse_go(Board* board, AttackTables* attacks, char* command){
 		depth = atoi(argument + 6);
 	}
 
-	if (argument = strstr(command, "perft")) {
+	else if (argument = strstr(command, "perft")) {
 		depth = atoi(argument + 6);
 		perft_test(board, attacks, depth);
 
@@ -116,7 +116,6 @@ void parse_go(Board* board, AttackTables* attacks, char* command){
 	}
 	
 
-	printf("Depth: %d\n", depth);
 	search_position(board, attacks, depth);
 }
 
@@ -132,40 +131,51 @@ void uci_main(Board* board, AttackTables* attacks) {
 	while (1) {
 		memset(input, 0, sizeof(input));
 
-		// make sure output reaches GUI
+		// make sure output reaches the GUI
 		fflush(stdout);
 
 		// get user / GUI input
-		if (!fgets(input, 2000, stdin)) continue;
+		if (!fgets(input, 2000, stdin))
+			continue;
 
-		// check if input is available
-		if (input[0] == '\n') continue;
+		// make sure input is available
+		if (input[0] == '\n')
+			continue;
 
-		if (!strncmp(input, "isready", 7)) {
+		// parse UCI "isready" command
+		if (strncmp(input, "isready", 7) == 0)
+		{
 			printf("readyok\n");
 			continue;
 		}
 
-		else if (!strncmp(input, "position", 8)) {
-			parse_position(board, attacks, input); 
-		}
+		// parse "position" command
+		else if (strncmp(input, "position", 8) == 0)
+			// call parse position function
+			parse_position(board, attacks, input);
 
-		else if (!strncmp(input, "ucinewgame", 10)) {
-			parse_position(board, attacks, "position startpos");
+		// parse UCI "ucinewgame" command
+		else if (strncmp(input, "ucinewgame", 10) == 0)
+			// call parse position function
+			parse_position(board, attacks,"position startpos");
 
-		}
-		
-		else if (!strncmp(input, "go", 2)) {
+		// parse UCI "go" command
+		else if (strncmp(input, "go", 2) == 0)
+			// call parse go function
 			parse_go(board, attacks, input);
-		}
 
-
-		else if (!strncmp(input, "quit", 4)) {
+		// parse UCI "quit" command
+		else if (strncmp(input, "quit", 4) == 0)
+			// quit from the chess engine program execution
 			break;
-		}
 
-		else if (!strncmp(input, "uci", 3)) {
-			printf("id name RT\nid name Cakala1\nuciok\n");
+		// parse UCI "uci" command
+		else if (strncmp(input, "uci", 3) == 0)
+		{
+			// print engine info
+			printf("id name RT\n");
+			printf("id name Cakala1\n");
+			printf("uciok\n");
 		}
 
 		else if (!strncmp(input, "d", 1)) {

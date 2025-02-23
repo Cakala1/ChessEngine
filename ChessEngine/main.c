@@ -24,9 +24,16 @@ int main() {
 	Board board;
 	reset_board(&board);
 	AttackTables* attacks = init_attack_tables();
-	
-	parse_FEN(&board, start_position);
-	print_board(&board);
-	search_position(&board, attacks, 4);
+
+	/*int debug = 0;
+	if (debug) {
+		parse_FEN(&board, start_position);
+		print_board(&board);
+		search_position(&board, attacks, 4);
+	}
+	else uci_main(&board, attacks);*/
+
+	uci_main(&board, attacks);
+
 	return 0;
 }
